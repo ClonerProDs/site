@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERROR | Разработчик ботов</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --gray1: #111111;
+            --gray2: #222222;
+            --gray3: #333333;
+            --gray6: #666666;
+            --gray9: #999999;
+            --glitch-color: #ff0000;
+            --accent: #00ff00;
+            --blue: #0000ff;
+            --purple: #8000ff;
+            --cyan: #00ffff;
+        }
+
+        body {
+            background-color: var(--black);
+            color: var(--white);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Загрузочный экран */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--black);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s, visibility 0.8s;
+        }
+
+        .loader-content {
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .loader-text {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: var(--white);
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 4px;
+            background: var(--gray3);
+            margin: 0 auto 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--white), var(--cyan));
+            transition: width 0.3s;
+            box-shadow: 0 0 10px var(--cyan);
+        }
+
+        .status-message {
+            font-size: 18px;
+            color: var(--gray9);
+            margin-bottom: 20px;
+            min-height: 24px;
+        }
+
+        .error-code {
+            font-size: 14px;
+            color: var(--gray6);
+            margin-top: 20px;
+            opacity: 0.7;
+        }
+
+        /* Windows BSOD стиль */
+        .bsod-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            background: #0078d7;
+            border: 2px solid #005a9e;
+            z-index: 10000;
+            display: none;
+            box-shadow: 0 0 50px rgba(0, 120, 215, 0.5);
+        }
+
+        .bsod-header {
+            background: #005a9e;
+            padding: 8px 15px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bsod-title {
+            font-size: 14px;
+        }
+
+        .bsod-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .bsod-content {
+            padding: 20px;
+            background: white;
+            color: black;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .bsod-error {
+            color: #c00000;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .loader.glitch-out {
+            animation: glitchOut 1.5s forwards;
+        }
+
+        @keyframes glitchOut {
+            0% { opacity: 1; }
+            10% { transform: translateX(-5px); opacity: 0.9; }
+            20% { transform: translateX(5px); opacity: 0.8; }
+            30% { transform: translateX(-3px); opacity: 0.7; }
+            40% { transform: translateX(3px); opacity: 0.6; }
+            50% { transform: translateX(-10px); opacity: 0.5; filter: hue-rotate(90deg); }
+            60% { transform: translateX(10px); opacity: 0.4; }
+            70% { transform: translateX(-15px); opacity: 0.3; }
+            80% { transform: translateX(15px); opacity: 0.2; }
+            90% { transform: scale(1.2); opacity: 0.1; }
+            100% { opacity: 0; visibility: hidden; }
+        }
+
+        /* Всплывающие ошибки при загрузке */
+        .error-popup {
+            position: absolute;
+            color: var(--glitch-color);
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+            text-shadow: 0 0 5px currentColor;
+            animation: errorAppear 0.3s forwards, errorFade 1s 0.5s forwards;
+        }
+
+        @keyframes errorAppear {
+            to { opacity: 1; transform: translateY(-20px); }
+        }
+
+        @keyframes errorFade {
+            to { opacity: 0; }
+        }
+
+        /* Глючные эффекты на фоне */
+        .glitch-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: var(--black);
+            overflow: hidden;
+        }
+
+        /* Пиксельные линии глюков */
+        .scanline {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, 
+                transparent, 
+                transparent 2px, 
+                rgba(255, 255, 255, 0.1) 2px, 
+                rgba(255, 255, 255, 0.1) 4px
+            );
+            top: 0;
+            animation: scanline 8s linear infinite;
+        }
+
+        .scanline-vertical {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: repeating-linear-gradient(180deg, 
+                transparent, 
+                transparent 2px, 
+                rgba(255, 255, 255, 0.1) 2px, 
+                rgba(255, 255, 255, 0.1) 4px
+            );
+            left: 0;
+            animation: scanlineVertical 12s linear infinite;
+        }
+
+        .scanline-diagonal {
+            position: absolute;
+            width: 200%;
+            height: 2px;
+            background: repeating-linear-gradient(45deg, 
+                transparent, 
+                transparent 2px, 
+                rgba(255, 255, 255, 0.1) 2px, 
+                rgba(255, 255, 255, 0.1) 4px
+            );
+            transform: rotate(45deg);
+            transform-origin: 0 0;
+            animation: scanlineDiagonal 15s linear infinite;
+        }
+
+        .scanline-diagonal-2 {
+            position: absolute;
+            width: 200%;
+            height: 2px;
+            background: repeating-linear-gradient(-45deg, 
+                transparent, 
+                transparent 2px, 
+                rgba(255, 255, 255, 0.1) 2px, 
+                rgba(255, 255, 255, 0.1) 4px
+            );
+            transform: rotate(-45deg);
+            transform-origin: 100% 0;
+            animation: scanlineDiagonal2 18s linear infinite;
+        }
+
+        /* Линии с "ломкой матрицы" */
+        .matrix-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, 
+                transparent, 
+                transparent 4px, 
+                var(--glitch-color) 4px, 
+                var(--glitch-color) 6px,
+                var(--accent) 6px,
+                var(--accent) 8px,
+                var(--blue) 8px,
+                var(--blue) 10px,
+                transparent 10px
+            );
+            opacity: 0;
+            animation: matrixLine 1.5s linear forwards;
+            filter: blur(0.5px);
+        }
+
+        @keyframes scanline {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        @keyframes scanlineVertical {
+            0% { left: 0; }
+            100% { left: 100%; }
+        }
+
+        @keyframes scanlineDiagonal {
+            0% { transform: rotate(45deg) translateX(-100%); }
+            100% { transform: rotate(45deg) translateX(100%); }
+        }
+
+        @keyframes scanlineDiagonal2 {
+            0% { transform: rotate(-45deg) translateX(-100%); }
+            100% { transform: rotate(-45deg) translateX(100%); }
+        }
+
+        @keyframes matrixLine {
+            0% { 
+                opacity: 0.8;
+                transform: translateX(-100%);
+                filter: blur(0.5px) hue-rotate(0deg);
+            }
+            50% { 
+                opacity: 1;
+                filter: blur(0px) hue-rotate(180deg);
+            }
+            100% { 
+                opacity: 0;
+                transform: translateX(100%);
+                filter: blur(1px) hue-rotate(360deg);
+            }
+        }
+
+        /* Пиксельные эффекты - УВЕЛИЧЕНОЕ КОЛИЧЕСТВО */
+        .pixel-glitch {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            background: var(--white);
+            opacity: 0;
+            animation: pixelFlicker 0.3s forwards;
+            pointer-events: none;
+            z-index: 10001; /* Поверх всего */
+        }
+
+        .pixel-glitch.rgb {
+            animation: pixelFlickerRGB 0.5s forwards;
+        }
+
+        .pixel-glitch.small {
+            width: 2px;
+            height: 2px;
+        }
+
+        .pixel-glitch.large {
+            width: 4px;
+            height: 4px;
+        }
+
+        @keyframes pixelFlicker {
+            0% { opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes pixelFlickerRGB {
+            0% { opacity: 0; background: var(--glitch-color); }
+            25% { opacity: 0.9; background: var(--glitch-color); }
+            50% { opacity: 1; background: var(--accent); }
+            75% { opacity: 0.9; background: var(--blue); }
+            100% { opacity: 0; background: var(--blue); }
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+        }
+
+        /* Шапка с меню */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            position: relative;
+            padding-left: 10px;
+            white-space: nowrap;
+        }
+
+        .logo::before, .logo::after {
+            content: 'ERROR';
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .logo::before {
+            color: var(--glitch-color);
+            animation: glitch-1 2s infinite linear alternate-reverse;
+            z-index: -1;
+        }
+
+        .logo::after {
+            color: var(--accent);
+            animation: glitch-2 3s infinite linear alternate-reverse;
+            z-index: -2;
+        }
+
+        @keyframes glitch-1 {
+            0% { transform: translate(0); }
+            5% { transform: translate(-1px, 1px); }
+            10% { transform: translate(1px, -1px); }
+            15% { transform: translate(-1px, -1px); }
+            20% { transform: translate(1px, 1px); }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes glitch-2 {
+            0% { transform: translate(0); }
+            2% { transform: translate(2px, -1px); }
+            4% { transform: translate(-1px, 2px); }
+            6% { transform: translate(1px, 1px); }
+            8% { transform: translate(-2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid transparent;
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                transparent 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+            z-index: -1;
+        }
+
+        /* ИЗМЕНЕНО: Сероватое свечение с глюками */
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                rgba(200, 200, 200, 0.1), 
+                rgba(150, 150, 150, 0.2), 
+                rgba(100, 100, 100, 0.1));
+            border-radius: 10px;
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            filter: blur(5px);
+        }
+
+        .nav-link:hover::before {
+            transform: translateX(100%);
+        }
+
+        .nav-link:hover::after {
+            opacity: 0.7;
+        }
+
+        .nav-link:hover {
+            color: var(--white);
+            border-color: rgba(255, 255, 255, 0.3);
+            /* ИЗМЕНЕНО: Сероватое свечение с глюками */
+            box-shadow: 
+                0 0 15px rgba(200, 200, 200, 0.3),
+                0 0 25px rgba(150, 150, 150, 0.2),
+                0 0 35px rgba(100, 100, 100, 0.1);
+            transform: translateY(-3px);
+            animation: navGlitch 0.3s infinite alternate;
+        }
+
+        @keyframes navGlitch {
+            0% {
+                box-shadow: 
+                    0 0 15px rgba(200, 200, 200, 0.3),
+                    0 0 25px rgba(150, 150, 150, 0.2),
+                    0 0 35px rgba(100, 100, 100, 0.1);
+            }
+            100% {
+                box-shadow: 
+                    0 0 20px rgba(200, 200, 200, 0.4),
+                    0 0 30px rgba(150, 150, 150, 0.3),
+                    0 0 40px rgba(100, 100, 100, 0.2);
+            }
+        }
+
+        .nav-link.active {
+            color: var(--white);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            /* ИЗМЕНЕНО: Сероватое свечение */
+            box-shadow: 
+                0 0 20px rgba(200, 200, 200, 0.4),
+                0 0 30px rgba(150, 150, 150, 0.3),
+                0 0 40px rgba(100, 100, 100, 0.2);
+            animation: buttonPulse 2s infinite;
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 20px rgba(200, 200, 200, 0.4),
+                    0 0 30px rgba(150, 150, 150, 0.3),
+                    0 0 40px rgba(100, 100, 100, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 30px rgba(200, 200, 200, 0.6),
+                    0 0 40px rgba(150, 150, 150, 0.5),
+                    0 0 50px rgba(100, 100, 100, 0.4);
+            }
+        }
+
+        /* Основной контент - правильное расположение */
+        main {
+            padding-top: 120px;
+            min-height: calc(100vh - 80px);
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        .page {
+            display: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s, transform 0.8s;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.05) 25%, 
+                rgba(255, 255, 255, 0.05) 50%, 
+                rgba(255, 255, 255, 0.05) 75%, 
+                transparent 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .page.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            animation: pageAppear 0.8s ease forwards;
+        }
+
+        .page.exiting {
+            opacity: 0;
+            transform: translateY(-30px);
+            transition: opacity 0.5s, transform 0.5s;
+            animation: pageExit 0.5s ease forwards;
+        }
+
+        @keyframes pageAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(50px) scale(0.95);
+                filter: blur(10px);
+            }
+            50% {
+                filter: blur(5px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes pageExit {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+                filter: blur(10px);
+            }
+        }
+
+        /* Главная страница */
+        .hero {
+            text-align: center;
+            padding: 40px 0 60px;
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            position: relative;
+            display: inline-block;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+
+        /* ИЗМЕНЕНО: Пиксельная полоска */
+        .hero h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, 
+                transparent, 
+                transparent 2px, 
+                var(--white) 2px, 
+                var(--white) 4px
+            );
+            animation: linePulse 3s infinite;
+        }
+
+        @keyframes linePulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--gray9);
+            margin-bottom: 40px;
+            font-weight: 300;
+            max-width: 100%;
+            word-wrap: break-word;
+            padding: 0 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+            width: 100%;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .info-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-card h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: var(--white);
+            position: relative;
+            display: inline-block;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        /* ИЗМЕНЕНО: Пиксельная полоска */
+        .info-card h3::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, 
+                transparent, 
+                transparent 1px, 
+                var(--white) 1px, 
+                var(--white) 2px
+            );
+        }
+
+        .info-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--gray9);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 40px;
+            width: 100%;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            min-width: 120px;
+            box-sizing: border-box;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--white);
+            margin-bottom: 8px;
+            display: block;
+            word-wrap: break-word;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            color: var(--gray9);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        /* Страница проектов */
+        .page-title {
+            text-align: center;
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+            word-wrap: break-word;
+            max-width: 90%;
+            padding: 0 10px;
+        }
+
+        .page-title::before, .page-title::after {
+            content: '[';
+            position: absolute;
+            top: 0;
+            left: -20px;
+            color: var(--gray6);
+        }
+
+        .page-title::after {
+            content: ']';
+            left: auto;
+            right: -20px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+            width: 100%;
+        }
+
+        .project-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .project-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .project-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        /* ИЗМЕНЕНО: Пиксельная полоска */
+        .project-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: repeating-linear-gradient(180deg, 
+                transparent, 
+                transparent 2px, 
+                var(--white) 2px, 
+                var(--white) 4px
+            );
+        }
+
+        .project-title {
+            font-size: 22px;
+            color: var(--white);
+            margin-bottom: 8px;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .project-subtitle {
+            color: var(--gray9);
+            font-size: 16px;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .project-body {
+            padding: 20px;
+        }
+
+        .project-description {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            color: var(--gray9);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .project-details {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .project-details li {
+            padding: 6px 0;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--gray9);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .project-details li:last-child {
+            border-bottom: none;
+        }
+
+        .project-details strong {
+            color: var(--white);
+        }
+
+        .project-link {
+            display: inline-block;
+            background: transparent;
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            word-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .project-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Страница соцсетей */
+        .socials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .social-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .social-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .social-icon {
+            font-size: 50px;
+            margin-bottom: 20px;
+            color: var(--white);
+        }
+
+        .social-name {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--white);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .social-handle {
+            font-size: 18px;
+            color: var(--gray9);
+            margin-bottom: 20px;
+            word-break: break-all;
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+
+        .social-link {
+            display: inline-block;
+            background: transparent;
+            color: var(--white);
+            text-decoration: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            word-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .social-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Страница заказа бота */
+        .order-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+            width: 100%;
+        }
+
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .pricing-header {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .pricing-title {
+            font-size: 24px;
+            color: var(--white);
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        .pricing-price {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--accent);
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+
+        .pricing-subtitle {
+            font-size: 16px;
+            color: var(--gray9);
+            word-wrap: break-word;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .pricing-features li {
+            padding: 8px 0;
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--gray9);
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: var(--accent);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .order-form {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 16px;
+            color: var(--white);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: var(--white);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 255, 0, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            display: inline-block;
+            background: rgba(0, 255, 0, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .form-note {
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--gray6);
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* Уведомление */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 20px;
+            color: var(--white);
+            z-index: 10000;
+            transform: translateX(150%);
+            transition: transform 0.5s ease;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-title {
+            font-size: 18px;
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .notification-message {
+            font-size: 16px;
+            color: var(--gray9);
+        }
+
+        /* Секция генерации кода */
+        .code-generation {
+            display: none;
+            animation: fadeIn 0.8s ease;
+            margin-top: 40px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .code-display {
+            position: relative;
+            background: var(--gray1);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--gray3);
+            margin: 15px 0;
+            font-family: monospace;
+            word-break: break-all;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 200px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .code-display code {
+            display: block;
+            color: var(--accent);
+            padding-right: 100px;
+        }
+
+        .code-copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 255, 0, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .code-copy-btn:hover {
+            background: rgba(0, 255, 0, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Инфо-карточка на странице соцсетей */
+        .page .info-card {
+            max-width: 800px;
+            margin: 40px auto 0;
+            padding: 30px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .page .info-card h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        .page .info-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        /* Футер */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .copyright {
+            font-size: 14px;
+            color: var(--gray6);
+            word-wrap: break-word;
+            max-width: 100%;
+            padding: 0 10px;
+        }
+
+        /* Эффекты глюков */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--glitch-color);
+            animation: glitch-3 3s infinite linear alternate-reverse;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: 2px 0 var(--accent);
+            animation: glitch-4 2.5s infinite linear alternate-reverse;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+        }
+
+        @keyframes glitch-3 {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes glitch-4 {
+            0% { transform: translate(0); }
+            10% { transform: translate(2px, -2px); }
+            30% { transform: translate(-2px, 2px); }
+            50% { transform: translate(2px, 2px); }
+            70% { transform: translate(-2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Опустить весь текст под меню */
+        main {
+            margin-top: 100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Сдвиг контента вниз под меню */
+        .hero,
+        .page-title,
+        .projects-grid,
+        .socials-grid,
+        .order-grid,
+        .page .info-card {
+            margin-top: 80px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 992px) {
+            .info-grid, .projects-grid, .order-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+            
+            main {
+                padding-top: 110px;
+            }
+            
+            .hero h1 {
+                font-size: 42px;
+            }
+            
+            .page-title {
+                font-size: 32px;
+            }
+
+            /* Адаптивный сдвиг текста */
+            .hero,
+            .page-title,
+            .projects-grid,
+            .socials-grid,
+            .order-grid,
+            .page .info-card {
+                margin-top: 70px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                gap: 10px;
+            }
+            
+            .nav-link {
+                font-size: 16px;
+                padding: 8px 14px;
+            }
+            
+            .logo {
+                font-size: 28px;
+            }
+            
+            main {
+                padding-top: 100px;
+            }
+            
+            .hero h1 {
+                font-size: 36px;
+                margin-bottom: 15px;
+            }
+            
+            .hero-subtitle {
+                font-size: 18px;
+                margin-bottom: 30px;
+            }
+            
+            .page-title {
+                font-size: 28px;
+                margin-bottom: 40px;
+            }
+            
+            .stats {
+                gap: 20px;
+            }
+            
+            .stat-item {
+                min-width: 100px;
+                padding: 10px;
+            }
+            
+            .stat-number {
+                font-size: 30px;
+            }
+            
+            .hero {
+                padding: 30px 0 50px;
+            }
+            
+            .info-grid, .projects-grid, .order-grid {
+                gap: 20px;
+            }
+            
+            .info-card, .project-card, .social-card, .pricing-card, .order-form, .code-generation .info-card {
+                padding: 20px;
+            }
+
+            /* Адаптивный сдвиг текста */
+            .hero,
+            .page-title,
+            .projects-grid,
+            .socials-grid,
+            .order-grid,
+            .page .info-card {
+                margin-top: 60px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .nav-links {
+                width: 100%;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .nav-link {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+            
+            .logo {
+                font-size: 24px;
+                align-self: center;
+                width: 100%;
+                text-align: center;
+            }
+            
+            main {
+                padding-top: 140px;
+            }
+            
+            .info-grid, .projects-grid, .order-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .socials-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .hero {
+                padding: 20px 0 40px;
+            }
+            
+            .hero h1 {
+                font-size: 32px;
+                margin-bottom: 10px;
+                padding: 0 10px;
+            }
+            
+            .hero-subtitle {
+                font-size: 16px;
+                margin-bottom: 25px;
+            }
+            
+            .page-title {
+                font-size: 24px;
+                margin-bottom: 30px;
+            }
+            
+            .stats {
+                gap: 15px;
+                margin-top: 30px;
+            }
+            
+            .stat-item {
+                min-width: 80px;
+                padding: 8px;
+            }
+            
+            .stat-number {
+                font-size: 24px;
+            }
+            
+            .stat-label {
+                font-size: 14px;
+            }
+            
+            .project-title {
+                font-size: 20px;
+            }
+            
+            .project-subtitle {
+                font-size: 14px;
+            }
+            
+            .social-icon {
+                font-size: 40px;
+            }
+            
+            .social-name {
+                font-size: 20px;
+            }
+            
+            .social-handle {
+                font-size: 16px;
+            }
+            
+            .pricing-title {
+                font-size: 20px;
+            }
+            
+            .pricing-price {
+                font-size: 28px;
+            }
+            
+            .code-display {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            .code-copy-btn {
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+            
+            .container {
+                padding: 0 15px;
+            }
+
+            /* Адаптивный сдвиг текста */
+            .hero,
+            .page-title,
+            .projects-grid,
+            .socials-grid,
+            .order-grid,
+            .page .info-card {
+                margin-top: 80px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .nav-links {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            
+            .nav-link {
+                width: 100%;
+                text-align: center;
+                padding: 8px;
+            }
+            
+            main {
+                padding-top: 180px;
+            }
+            
+            .hero h1 {
+                font-size: 28px;
+            }
+            
+            .page-title {
+                font-size: 22px;
+            }
+
+            /* Адаптивный сдвиг текста */
+            .hero,
+            .page-title,
+            .projects-grid,
+            .socials-grid,
+            .order-grid,
+            .page .info-card {
+                margin-top: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Загрузочный экран -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-text">SYSTEM BOOT</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="status-message" id="statusMessage">Инициализация системы...</div>
+            <div class="error-code" id="errorCode">ERROR_CODE: 0x000000</div>
+        </div>
+    </div>
+    
+    <!-- Windows BSOD окна -->
+    <div class="bsod-window" id="bsod1">
+        <div class="bsod-header">
+            <div class="bsod-title">Ошибка системы - ERROR.exe</div>
+            <button class="bsod-close">✕</button>
+        </div>
+        <div class="bsod-content">
+            <div class="bsod-error">ERROR: Системный сбой</div>
+            <p>Программа ERROR.exe вызвала ошибку и будет закрыта.</p>
+            <p>Если проблема повторится, перезагрузите компьютер.</p>
+            <p>Код ошибки: 0x0000001A</p>
+            <p>Адрес: 0x0045A3C7 в ERROR.exe</p>
+        </div>
+    </div>
+    
+    <div class="bsod-window" id="bsod2" style="display:none; width: 500px; top: 30%; left: 30%;">
+        <div class="bsod-header">
+            <div class="bsod-title">Ошибка приложения</div>
+            <button class="bsod-close">✕</button>
+        </div>
+        <div class="bsod-content">
+            <div class="bsod-error">ERROR: Неправильный параметр</div>
+            <p>Приложение обнаружило неправильный параметр.</p>
+            <p>Код: 0xC0000005</p>
+            <p>Параметр: 0x00000008</p>
+        </div>
+    </div>
+    
+    <div class="bsod-window" id="bsod3" style="display:none; width: 450px; top: 40%; left: 40%;">
+        <div class="bsod-header">
+            <div class="bsod-title">Критическая ошибка</div>
+            <button class="bsod-close">✕</button>
+        </div>
+        <div class="bsod-content">
+            <div class="bsod-error">ERROR: Доступ запрещен</div>
+            <p>Попытка доступа к защищенной памяти.</p>
+            <p>Адрес: 0xF0F0F0F0</p>
+            <p>Код: ACCESS_VIOLATION</p>
+        </div>
+    </div>
+
+    <!-- Уведомление -->
+    <div class="notification" id="notification">
+        <div class="notification-title">ОШИБКА!</div>
+        <div class="notification-message">Заявка отправлена. Свяжусь с вами в ближайшее время.</div>
+    </div>
+    
+    <!-- Фон с эффектами -->
+    <div class="glitch-bg" id="glitch-bg">
+        <div class="scanline"></div>
+        <div class="scanline-vertical"></div>
+        <div class="scanline-diagonal"></div>
+        <div class="scanline-diagonal-2"></div>
+        <div class="vignette"></div>
+    </div>
+    
+    <!-- Шапка с меню -->
+    <header>
+        <div class="container nav-container">
+            <div class="logo">ERROR</div>
+            <nav class="nav-links">
+                <a href="#" class="nav-link active" data-page="home">Главная</a>
+                <a href="#" class="nav-link" data-page="projects">Проекты</a>
+                <a href="#" class="nav-link" data-page="socials">Соцсети</a>
+                <a href="#" class="nav-link" data-page="order">Заказ бота</a>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- Основной контент -->
+    <main class="container">
+        <!-- Главная страница -->
+        <section id="home" class="page active">
+            <div class="hero">
+                <h1 class="glitch-text" data-text="ERROR">ERROR</h1>
+                <p class="hero-subtitle">Разработчик Discord & Telegram ботов</p>
+                
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3>Опыт</h3>
+                        <p>Занимаюсь программированием 2.5 года. Начал с основ Python, затем углубился в разработку ботов. Последние 1.5 года специализируюсь на создании Discord и Telegram ботов различной сложности.</p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3>Навыки</h3>
+                        <p>Python, асинхронное программирование, работа с API, базы данных (SQLite, PostgreSQL), веб-скрапинг, многопоточность, деплой приложений, работа с библиотеками aiogram, discord.py, requests.</p>
+                    </div>
+                    
+                    <div class="info-card">
+                        <h3>Подход</h3>
+                        <p>Создаю не просто ботов, а полноценные решения с понятным кодом, масштабируемой архитектурой и удобным интерфейсом. Каждый проект - это вызов и возможность улучшить свои навыки.</p>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-number">2.5</span>
+                        <span class="stat-label">Года опыта</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">10+</span>
+                        <span class="stat-label">Завершённых проектов</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">24/7</span>
+                        <span class="stat-label">Поддержка</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">100%</span>
+                        <span class="stat-label">Качество</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Страница проектов -->
+        <section id="projects" class="page">
+            <h2 class="page-title">Проекты</h2>
+            
+            <div class="projects-grid">
+                <!-- Проект 1 -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3 class="project-title">Weather Bot</h3>
+                        <p class="project-subtitle">Telegram бот для проверки погоды</p>
+                    </div>
+                    <div class="project-body">
+                        <p class="project-description">
+                            Полнофункциональный бот для получения точных данных о погоде. Поддерживает города по всему миру, предоставляет подробную информацию о температуре, влажности, скорости ветра и атмосферном давлении.
+                        </p>
+                        <ul class="project-details">
+                            <li><strong>Разработка:</strong> 2-3 месяца</li>
+                            <li><strong>API:</strong> openweathermap.org</li>
+                            <li><strong>Ник бота:</strong> @CheckWeatherTgbot</li>
+                            <li><strong>Особенности:</strong> прогноз на 5 дней, поддержка геолокации, уведомления о погоде</li>
+                            <li><strong>Технологии:</strong> Python, aiogram, requests, SQLite</li>
+                        </ul>
+                        <a href="https://t.me/CheckWeatherTgbot" class="project-link" target="_blank">Открыть бот</a>
+                    </div>
+                </div>
+                
+                <!-- Проект 2 -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3 class="project-title">Справочник физика</h3>
+                        <p class="project-subtitle">Telegram бот с формулами по физике</p>
+                    </div>
+                    <div class="project-body">
+                        <p class="project-description">
+                            Образовательный проект, содержащий полную базу формул по школьной и университетской физике. Помогает студентам быстро находить нужные формулы и проверять знания с помощью тестов.
+                        </p>
+                        <ul class="project-details">
+                            <li><strong>Разработка:</strong> 3-6 месяцев</li>
+                            <li><strong>Формул в базе:</strong> 180+</li>
+                            <li><strong>Ник бота:</strong> @PhysicsReferencebot</li>
+                            <li><strong>Особенности:</strong> система поиска, тестирование знаний, разделение по темам</li>
+                            <li><strong>Технологии:</strong> Python, aiogram, PostgreSQL, FSM</li>
+                        </ul>
+                        <a href="https://t.me/PhysicsReferencebot" class="project-link" target="_blank">Открыть бот</a>
+                    </div>
+                </div>
+                
+                <!-- Проект 3 -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3 class="project-title">TSZ Helper</h3>
+                        <p class="project-subtitle">Многофункциональный Discord бот</p>
+                    </div>
+                    <div class="project-body">
+                        <p class="project-description">
+                            Самый сложный и функциональный проект. Бот с 90+ командами для администрирования Discord серверов. Включает системы модерации, экономики, заявок и автоматизации рутинных задач.
+                        </p>
+                        <ul class="project-details">
+                            <li><strong>Разработка:</strong> 6-8 месяцев</li>
+                            <li><strong>Количество команд:</strong> 90+</li>
+                            <li><strong>Системы:</strong> модерация, авто-модерация, экономика, приём заявок, система заказов</li>
+                            <li><strong>Особенности:</strong> веб-панель управления, настраиваемые уровни доступа, логирование</li>
+                            <li><strong>Технологии:</strong> Python, discord.py, SQLite</li>
+                        </ul>
+                        <a href="#" class="project-link">Внутренний проект</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Страница соцсетей -->
+        <section id="socials" class="page">
+            <h2 class="page-title">Контакты</h2>
+            
+            <div class="socials-grid">
+                <!-- Telegram -->
+                <div class="social-card">
+                    <div class="social-icon">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <h3 class="social-name">Telegram</h3>
+                    <p class="social-handle">@ErrorOnebiobot</p>
+                    <p class="project-description" style="text-align: center; margin-bottom: 20px;">Основная платформа для связи. Отвечаю на вопросы о ботах и принимаю заказы.</p>
+                    <a href="https://t.me/ErrorOnebiobot" class="social-link" target="_blank">Написать сообщение</a>
+                </div>
+                
+                <!-- Discord -->
+                <div class="social-card">
+                    <div class="social-icon">
+                        <i class="fab fa-discord"></i>
+                    </div>
+                    <h3 class="social-name">Discord</h3>
+                    <p class="social-handle">error4c</p>
+                    <p class="project-description" style="text-align: center; margin-bottom: 20px;">Для связи по вопросам Discord ботов и участия в тестировании новых функций.</p>
+                    <a href="#" class="social-link" id="discord-copy">Скопировать ник</a>
+                </div>
+            </div>
+            
+            <div class="info-card" style="max-width: 800px; margin: 40px auto 0;">
+                <h3>Сотрудничество</h3>
+                <p>Открыт к предложениям по разработке Telegram и Discord ботов любой сложности. Могу создать как простого информационного бота, так и сложную систему с базой данных и интеграцией с внешними API.</p>
+                <p style="margin-top: 15px;">Предпочитаю долгосрочные проекты с возможностью поддержки и доработки. Гарантирую чистый, документированный код и соблюдение сроков.</p>
+            </div>
+        </section>
+
+        <!-- Страница заказа бота -->
+        <section id="order" class="page">
+            <h2 class="page-title">Заказ бота</h2>
+            
+            <div class="order-grid">
+                <!-- Тариф 1 -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">БАЗОВЫЙ</h3>
+                        <div class="pricing-price">300-499₽</div>
+                        <div class="pricing-subtitle">Информационный бот</div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Кнопочное меню</li>
+                        <li>Текстовые команды</li>
+                        <li>FAQ система</li>
+                        <li>Простая навигация</li>
+                        <li>Базовые ответы</li>
+                        <li>Поддержка 1 неделя</li>
+                    </ul>
+                    <div class="pricing-subtitle">Идеально для информационных ресурсов и справочников</div>
+                </div>
+                
+                <!-- Тариф 2 -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">СТАНДАРТНЫЙ</h3>
+                        <div class="pricing-price">499-799₽</div>
+                        <div class="pricing-subtitle">Бот средней сложности</div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Система сбора заявок</li>
+                        <li>Работа с базой данных</li>
+                        <li>Взаимодействие с пользователями</li>
+                        <li>Автоматические ответы</li>
+                        <li>Настраиваемые команды</li>
+                        <li>Поддержка 2 недели</li>
+                    </ul>
+                    <div class="pricing-subtitle">Для бизнеса и автоматизации процессов</div>
+                </div>
+                
+                <!-- Тариф 3 -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">ПРОФЕССИОНАЛЬНЫЙ</h3>
+                        <div class="pricing-price">799-999₽</div>
+                        <div class="pricing-subtitle">Сложный функционал</div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Объёмная работа с БД</li>
+                        <li>Сложные системы логики</li>
+                        <li>Многопользовательский режим</li>
+                        <li>Расширенная аналитика</li>
+                        <li>Кастомизация под требования</li>
+                        <li>Поддержка 1 месяц</li>
+                    </ul>
+                    <div class="pricing-subtitle">Для комплексных решений и автоматизации</div>
+                </div>
+                
+                <!-- Тариф 4 -->
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">ПРЕМИУМ</h3>
+                        <div class="pricing-price">от 1999₽</div>
+                        <div class="pricing-subtitle">Высокий уровень сложности</div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Интеграция внешних API</li>
+                        <li>Объёмная работа с пользователями</li>
+                        <li>Сложные алгоритмы</li>
+                        <li>Интеграция платежных систем</li>
+                        <li>Полная кастомизация</li>
+                        <li>Поддержка 2 месяца</li>
+                    </ul>
+                    <div class="pricing-subtitle">Для масштабных проектов и бизнес-решений</div>
+                </div>
+            </div>
+
+            <div class="info-card" style="max-width: 800px; margin: 40px auto;">
+                <h3>Условия сотрудничества</h3>
+                <p><strong>Важно:</strong> Представленные расценки являются ориентировочными и подлежат индивидуальному обсуждению. Окончательная стоимость определяется после детального анализа технического задания и требований заказчика.</p>
+                <p style="margin-top: 15px;">Каждый проект оценивается индивидуально с учетом сложности, сроков реализации и дополнительных требований. Предоставляется детальная смета и поэтапный план работ.</p>
+                <p style="margin-top: 15px; color: var(--accent); font-weight: bold;">Для обсуждения деталей и получения точного расчета обратитесь через форму заказа.</p>
+            </div>
+
+            <div class="order-form">
+                <h3 style="text-align: center; margin-bottom: 30px; color: var(--white);">Форма заказа</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Имя *</label>
+                    <input type="text" class="form-input" id="orderName" placeholder="Ваше имя" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Контакт (Telegram) *</label>
+                    <input type="text" class="form-input" id="orderContact" placeholder="@username или номер телефона" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Тип бота *</label>
+                    <select class="form-select" id="orderType" required>
+                        <option value="">Выберите тип бота</option>
+                        <option value="basic">Базовый (300-499₽)</option>
+                        <option value="standard">Стандартный (499-799₽)</option>
+                        <option value="professional">Профессиональный (799-999₽)</option>
+                        <option value="premium">Премиум (от 1999₽)</option>
+                        <option value="custom">Индивидуальный проект</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Описание проекта *</label>
+                    <textarea class="form-textarea" id="orderDescription" placeholder="Опишите подробно, что должен делать бот, какие функции нужны, сроки и особые требования..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Бюджет (руб.)</label>
+                    <input type="number" class="form-input" id="orderBudget" placeholder="Ориентировочный бюджет">
+                </div>
+                
+                <button class="submit-btn" id="orderSubmit">Сгенерировать код для бота</button>
+                
+                <div class="form-note">
+                    * Обязательные поля. После заполнения формы будет сгенерирован код, который нужно отправить боту @ErrorOnebiobot для оформления заказа.
+                </div>
+            </div>
+
+            <!-- Секция генерации кода -->
+            <div class="code-generation" id="codeSection">
+                <div class="info-card" style="max-width: 800px; margin: 0 auto;">
+                    <h3>📋 Код для бота</h3>
+                    <p>Скопируйте этот код и отправьте боту <a href="https://t.me/ErrorOnebiobot" target="_blank" style="color: var(--accent);">@ErrorOnebiobot</a>:</p>
+                    <div class="code-display">
+                        <code id="botCode"></code>
+                        <button class="code-copy-btn" id="copyCodeBtn">Копировать</button>
+                    </div>
+                    <p style="color: var(--gray9); font-size: 14px; margin-top: 15px;">
+                        <strong>Инструкция:</strong><br>
+                        1. Скопируйте код выше<br>
+                        2. Перейдите в Telegram к боту <a href="https://t.me/ErrorOnebiobot" target="_blank" style="color: var(--accent);">@ErrorOnebiobot</a><br>
+                        3. Нажмите "🤖 Заказать бота"<br>
+                        4. Отправьте скопированный код на любом этапе оформления заказа
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Футер -->
+    <footer>
+        <div class="container">
+            <p class="copyright">© 2023 ERROR. Все права защищены. | Версия 2.1.3 | Заказы через Telegram бот</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Загрузочный экран
+        const loader = document.getElementById('loader');
+        const progressFill = document.getElementById('progressFill');
+        const statusMessage = document.getElementById('statusMessage');
+        const errorCode = document.getElementById('errorCode');
+        const notification = document.getElementById('notification');
+        
+        // Симуляция загрузки
+        const messages = [
+            "Инициализация системы...",
+            "Загрузка модулей...",
+            "Проверка конфигурации...",
+            "Подключение к базе данных...",
+            "Ошибка сегментации!",
+            "Попытка восстановления...",
+            "Сбой системы!",
+            "Принудительный запуск..."
+        ];
+        
+        const errorCodes = [
+            "ERROR_CODE: 0x000000",
+            "ERROR_CODE: 0x1A3F7C",
+            "ERROR_CODE: 0xFFFF00",
+            "ERROR_CODE: 0xDEADBEEF",
+            "ERROR_CODE: 0xBADF00D",
+            "ERROR_CODE: 0xCAFEBABE"
+        ];
+        
+        let progress = 0;
+        let messageIndex = 0;
+        let errorCodeIndex = 0;
+        
+        // Массив окон BSOD
+        const bsodWindows = ['bsod1', 'bsod2', 'bsod3'];
+        let bsodCount = 0;
+        
+        // Функция для создания всплывающих ошибок
+        function createErrorPopup() {
+            const errorTexts = ["ERROR", "FAIL", "CRASH", "ABORT", "404", "500", "SEGFAULT", "MEMORY ERROR"];
+            const error = document.createElement('div');
+            error.className = 'error-popup';
+            error.textContent = errorTexts[Math.floor(Math.random() * errorTexts.length)];
+            error.style.left = Math.random() * 100 + 'vw';
+            error.style.top = Math.random() * 100 + 'vh';
+            error.style.fontSize = (Math.random() * 20 + 12) + 'px';
+            error.style.color = Math.random() > 0.5 ? '#ff0000' : (Math.random() > 0.5 ? '#00ff00' : '#0000ff');
+            
+            loader.appendChild(error);
+            
+            setTimeout(() => {
+                error.remove();
+            }, 1500);
+        }
+        
+        // Функция для создания пиксельных глюков
+        function createPixelGlitch(isRGB = false) {
+            const count = Math.floor(Math.random() * 3) + 3;
+            
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    const pixel = document.createElement('div');
+                    const pixelType = Math.random();
+                    let className = 'pixel-glitch';
+                    
+                    if (isRGB || pixelType > 0.8) {
+                        className += ' rgb';
+                    }
+                    if (pixelType > 0.7 && pixelType <= 0.8) {
+                        className += ' small';
+                    }
+                    if (pixelType <= 0.1) {
+                        className += ' large';
+                    }
+                    
+                    pixel.className = className;
+                    pixel.style.left = Math.random() * 100 + 'vw';
+                    pixel.style.top = Math.random() * 100 + 'vh';
+                    
+                    if (!isRGB && !className.includes('rgb')) {
+                        const colors = ['#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+                        pixel.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    }
+                    
+                    document.body.appendChild(pixel);
+                    
+                    setTimeout(() => {
+                        if (pixel.parentNode) {
+                            pixel.parentNode.removeChild(pixel);
+                        }
+                    }, isRGB ? 600 : 400);
+                }, i * 10);
+            }
+        }
+        
+        // Функция для показа окон BSOD
+        function showBSOD() {
+            if (bsodCount >= 20) return;
+            
+            const bsodId = bsodWindows[Math.floor(Math.random() * bsodWindows.length)];
+            const bsod = document.getElementById(bsodId);
+            
+            bsod.style.left = Math.random() * 60 + 10 + '%';
+            bsod.style.top = Math.random() * 60 + 10 + '%';
+            bsod.style.display = 'block';
+            bsod.style.zIndex = 10000 + bsodCount;
+            
+            bsodCount++;
+            
+            const closeBtn = bsod.querySelector('.bsod-close');
+            closeBtn.onclick = function() {
+                bsod.style.display = 'none';
+                bsodCount--;
+            };
+            
+            setTimeout(() => {
+                if (bsod.style.display === 'block') {
+                    bsod.style.display = 'none';
+                    bsodCount--;
+                }
+            }, 2000 + Math.random() * 2000);
+        }
+        
+        // Функция для показа уведомления
+        function showNotification(title, message) {
+            const notification = document.getElementById('notification');
+            const titleElement = notification.querySelector('.notification-title');
+            const messageElement = notification.querySelector('.notification-message');
+            
+            titleElement.textContent = title;
+            messageElement.textContent = message;
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Специальная анимация для разных страниц
+        function specialPageTransition(targetPageId) {
+            // Разные эффекты для разных страниц
+            let effects = {
+                'home': {
+                    filter: 'hue-rotate(60deg)',
+                    transform: 'scale(1.02)',
+                    pixelCount: 15,
+                    bsodCount: 2,
+                    color: 'rgba(255,0,0,0.3)'
+                },
+                'projects': {
+                    filter: 'hue-rotate(120deg)',
+                    transform: 'rotate(0.5deg)',
+                    pixelCount: 20,
+                    bsodCount: 3,
+                    color: 'rgba(0,255,0,0.3)'
+                },
+                'socials': {
+                    filter: 'hue-rotate(240deg)',
+                    transform: 'skewX(-2deg)',
+                    pixelCount: 18,
+                    bsodCount: 2,
+                    color: 'rgba(0,0,255,0.3)'
+                },
+                'order': {
+                    filter: 'hue-rotate(180deg) brightness(1.5)',
+                    transform: 'rotate(1deg)',
+                    pixelCount: 30,
+                    bsodCount: 5,
+                    color: 'radial-gradient(circle, rgba(255,0,0,0.3) 0%, rgba(0,255,0,0.3) 50%, rgba(0,0,255,0.3) 100%)'
+                }
+            };
+            
+            const effect = effects[targetPageId] || effects['home'];
+            
+            // Применяем эффекты
+            document.body.style.filter = effect.filter;
+            document.body.style.transform = effect.transform;
+            
+            // Создаем пиксельные эффекты
+            for (let i = 0; i < effect.pixelCount; i++) {
+                setTimeout(() => createPixelGlitch(true), i * 20);
+            }
+            
+            // Показываем BSOD окна
+            for (let i = 0; i < effect.bsodCount; i++) {
+                setTimeout(() => showBSOD(), i * 100);
+            }
+            
+            // Возвращаем нормальное состояние
+            setTimeout(() => {
+                document.body.style.filter = '';
+                document.body.style.transform = '';
+                
+                // Добавляем дополнительный эффект
+                const tempEffect = document.createElement('div');
+                tempEffect.style.position = 'fixed';
+                tempEffect.style.top = '0';
+                tempEffect.style.left = '0';
+                tempEffect.style.width = '100%';
+                tempEffect.style.height = '100%';
+                tempEffect.style.background = effect.color;
+                tempEffect.style.zIndex = '9997';
+                tempEffect.style.opacity = '0';
+                tempEffect.style.animation = 'fadeInOut 0.5s';
+                document.body.appendChild(tempEffect);
+                
+                setTimeout(() => {
+                    tempEffect.remove();
+                }, 500);
+            }, 500);
+        }
+        
+        const loadInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 100) progress = 100;
+            progressFill.style.width = progress + '%';
+            
+            if (Math.random() > 0.5) {
+                createPixelGlitch(Math.random() > 0.8);
+            }
+            
+            if (progress < 80 && Math.random() > 0.7 && bsodCount < 10) {
+                showBSOD();
+            }
+            
+            if (progress > messageIndex * 15) {
+                statusMessage.textContent = messages[messageIndex];
+                messageIndex++;
+                
+                if (messageIndex === 5 || messageIndex === 7) {
+                    statusMessage.style.color = '#ff0000';
+                    statusMessage.style.textShadow = '0 0 10px #ff0000';
+                    setTimeout(() => {
+                        statusMessage.style.color = '';
+                        statusMessage.style.textShadow = '';
+                    }, 500);
+                    
+                    for (let i = 0; i < 8; i++) {
+                        setTimeout(() => createErrorPopup(), i * 100);
+                    }
+                    
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => showBSOD(), i * 300);
+                    }
+                }
+            }
+            
+            if (progress > errorCodeIndex * 20) {
+                errorCode.textContent = errorCodes[errorCodeIndex];
+                errorCodeIndex++;
+            }
+            
+            if (progress >= 100) {
+                clearInterval(loadInterval);
+                
+                statusMessage.textContent = "СИСТЕМНЫЙ СБОЙ! ПРИНУДИТЕЛЬНЫЙ ЗАПУСК...";
+                statusMessage.style.color = '#ff0000';
+                statusMessage.style.textShadow = '0 0 15px #ff0000';
+                
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => createErrorPopup(), i * 50);
+                }
+                
+                for (let i = 0; i < 30; i++) {
+                    setTimeout(() => createPixelGlitch(true), i * 20);
+                }
+                
+                for (let i = 0; i < 8; i++) {
+                    setTimeout(() => showBSOD(), i * 200);
+                }
+                
+                setTimeout(() => {
+                    loader.classList.add('glitch-out');
+                    
+                    setTimeout(() => {
+                        document.querySelectorAll('.bsod-window').forEach(bsod => {
+                            bsod.style.display = 'none';
+                        });
+                        
+                        setTimeout(() => {
+                            loader.style.display = 'none';
+                            startBackgroundGlitches();
+                        }, 1000);
+                    }, 500);
+                }, 1500);
+            }
+        }, 300);
+        
+        // Фоновые глюки
+        function startBackgroundGlitches() {
+            const glitchBg = document.getElementById('glitch-bg');
+            
+            function createScanline(type) {
+                const scanline = document.createElement('div');
+                scanline.className = type;
+                
+                switch(type) {
+                    case 'scanline':
+                        scanline.style.top = Math.random() * 100 + 'vh';
+                        scanline.style.animationDuration = (Math.random() * 5 + 3) + 's';
+                        break;
+                    case 'scanline-vertical':
+                        scanline.style.left = Math.random() * 100 + 'vw';
+                        scanline.style.animationDuration = (Math.random() * 8 + 4) + 's';
+                        break;
+                    case 'scanline-diagonal':
+                        scanline.style.top = Math.random() * 100 + 'vh';
+                        scanline.style.animationDuration = (Math.random() * 10 + 5) + 's';
+                        break;
+                    case 'scanline-diagonal-2':
+                        scanline.style.top = Math.random() * 100 + 'vh';
+                        scanline.style.animationDuration = (Math.random() * 12 + 6) + 's';
+                        break;
+                }
+                
+                scanline.style.opacity = Math.random() * 0.3 + 0.1;
+                glitchBg.appendChild(scanline);
+                
+                setTimeout(() => {
+                    if (scanline.parentNode) {
+                        scanline.parentNode.removeChild(scanline);
+                    }
+                }, 15000);
+            }
+            
+            function createMatrixLine() {
+                const line = document.createElement('div');
+                line.className = 'matrix-line';
+                line.style.top = Math.random() * 100 + 'vh';
+                line.style.height = (Math.random() * 3 + 2) + 'px';
+                line.style.animationDuration = (Math.random() * 1 + 1) + 's';
+                glitchBg.appendChild(line);
+                
+                setTimeout(() => {
+                    if (line.parentNode) {
+                        line.parentNode.removeChild(line);
+                    }
+                }, 2000);
+            }
+            
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    createScanline(['scanline', 'scanline-vertical', 'scanline-diagonal', 'scanline-diagonal-2'][Math.floor(Math.random() * 4)]);
+                }, i * 2000);
+            }
+            
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    createScanline(['scanline', 'scanline-vertical', 'scanline-diagonal', 'scanline-diagonal-2'][Math.floor(Math.random() * 4)]);
+                }
+                
+                if (Math.random() > 0.9) {
+                    createMatrixLine();
+                }
+                
+                if (Math.random() > 0.6) {
+                    createPixelGlitch(Math.random() > 0.9);
+                }
+            }, 2000);
+            
+            setInterval(() => {
+                if (Math.random() > 0.8) {
+                    const elements = document.querySelectorAll('h1, h2, h3, .logo');
+                    if (elements.length > 0) {
+                        const element = elements[Math.floor(Math.random() * elements.length)];
+                        
+                        element.style.transform = 'translateX(' + (Math.random() * 10 - 5) + 'px)';
+                        element.style.color = Math.random() > 0.5 ? '#ff0000' : '#00ff00';
+                        
+                        setTimeout(() => {
+                            element.style.transform = '';
+                            element.style.color = '';
+                        }, 100);
+                    }
+                }
+            }, 2000);
+        }
+        
+        // Переключение страниц с анимацией
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const currentPage = document.querySelector('.page.active');
+                const targetPageId = this.getAttribute('data-page');
+                const targetPage = document.getElementById(targetPageId);
+                
+                if (targetPage === currentPage) return;
+                
+                document.querySelectorAll('.nav-link').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                
+                if (currentPage) {
+                    currentPage.classList.remove('active');
+                    currentPage.classList.add('exiting');
+                    
+                    // Запускаем специальную анимацию для целевой страницы
+                    specialPageTransition(targetPageId);
+                    
+                    setTimeout(() => {
+                        currentPage.classList.remove('exiting');
+                        targetPage.classList.add('active');
+                        
+                        // Создаем дополнительный эффект
+                        const tempGlitch = document.createElement('div');
+                        tempGlitch.style.position = 'fixed';
+                        tempGlitch.style.top = '0';
+                        tempGlitch.style.left = '0';
+                        tempGlitch.style.width = '100%';
+                        tempGlitch.style.height = '100%';
+                        tempGlitch.style.background = 'linear-gradient(45deg, rgba(255,0,0,0.1), rgba(0,255,0,0.1), rgba(0,0,255,0.1))';
+                        tempGlitch.style.zIndex = '9998';
+                        tempGlitch.style.opacity = '0';
+                        tempGlitch.style.animation = 'fadeInOut 0.3s';
+                        document.body.appendChild(tempGlitch);
+                        
+                        setTimeout(() => {
+                            tempGlitch.remove();
+                        }, 300);
+                    }, 500);
+                } else {
+                    targetPage.classList.add('active');
+                }
+            });
+        });
+        
+        // Копирование Discord ника
+        document.getElementById('discord-copy').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const tempInput = document.createElement('input');
+            tempInput.value = 'error4c';
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            const originalText = this.textContent;
+            this.textContent = 'СКОПИРОВАНО!';
+            this.style.background = 'rgba(255, 255, 255, 0.2)';
+            this.style.borderColor = '#ffffff';
+            this.style.transform = 'scale(1.1)';
+            this.style.color = '#00ff00';
+            
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => createPixelGlitch(true), i * 50);
+            }
+            
+            setTimeout(() => {
+                this.textContent = originalText;
+                this.style.background = '';
+                this.style.borderColor = '';
+                this.style.transform = '';
+                this.style.color = '';
+            }, 2000);
+        });
+        
+        // Обработка формы заказа с генерацией кода
+        document.getElementById('orderSubmit').addEventListener('click', function() {
+            const name = document.getElementById('orderName').value.trim();
+            const contact = document.getElementById('orderContact').value.trim();
+            const typeSelect = document.getElementById('orderType');
+            const type = typeSelect.options[typeSelect.selectedIndex].text;
+            const description = document.getElementById('orderDescription').value.trim();
+            const budget = document.getElementById('orderBudget').value || 'Обсуждается';
+            
+            if (!name || !contact || !typeSelect.value || !description) {
+                showNotification('ОШИБКА', 'Заполните все обязательные поля!');
+                return;
+            }
+            
+            // Эффект отправки
+            this.textContent = 'ГЕНЕРИРУЕМ КОД...';
+            this.style.background = 'rgba(0, 255, 0, 0.3)';
+            this.disabled = true;
+            
+            // Глюк эффекты
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => createPixelGlitch(true), i * 30);
+            }
+            
+            // Показываем BSOD для эффекта
+            setTimeout(() => showBSOD(), 200);
+            setTimeout(() => showBSOD(), 400);
+            
+            // Создаем данные заказа
+            const orderData = {
+                name: name,
+                contact: contact,
+                type: type,
+                description: description,
+                budget: budget,
+                timestamp: new Date().toISOString(),
+                source: 'website'
+            };
+            
+            // Кодируем в base64 для удобства передачи
+            const jsonString = JSON.stringify(orderData);
+            const encodedData = btoa(unescape(encodeURIComponent(jsonString)));
+            
+            // Формируем команду для бота
+            const botCommand = `/start order_${encodedData}`;
+            
+            // Показываем код
+            document.getElementById('botCode').textContent = botCommand;
+            document.getElementById('codeSection').style.display = 'block';
+            
+            // Показываем уведомление
+            showNotification('✅ КОД СГЕНЕРИРОВАН', 'Скопируйте код и отправьте боту @ErrorOnebiobot для оформления заказа!');
+            
+            // Прокрутка к коду
+            setTimeout(() => {
+                document.getElementById('codeSection').scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+            
+            // Возвращаем кнопку в исходное состояние
+            setTimeout(() => {
+                this.textContent = 'Сгенерировать код для бота';
+                this.style.background = 'rgba(0, 255, 0, 0.1)';
+                this.disabled = false;
+            }, 1000);
+        });
+        
+        // Кнопка копирования кода
+        document.getElementById('copyCodeBtn').addEventListener('click', function() {
+            const code = document.getElementById('botCode').textContent;
+            
+            // Используем Clipboard API если доступен
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(code).then(() => {
+                    showCopySuccess(this);
+                }).catch(() => {
+                    // Fallback для старых браузеров
+                    copyToClipboardFallback(code, this);
+                });
+            } else {
+                // Fallback для старых браузеров
+                copyToClipboardFallback(code, this);
+            }
+        });
+        
+        function showCopySuccess(button) {
+            button.textContent = 'СКОПИРОВАНО!';
+            button.style.background = 'rgba(0, 255, 0, 0.3)';
+            button.style.color = '#ffffff';
+            
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => createPixelGlitch(true), i * 50);
+            }
+            
+            showNotification('✅ КОД СКОПИРОВАН', 'Теперь отправьте его боту @ErrorOnebiobot');
+            
+            setTimeout(() => {
+                button.textContent = 'Копировать';
+                button.style.background = 'rgba(0, 255, 0, 0.1)';
+                button.style.color = 'var(--accent)';
+            }, 2000);
+        }
+        
+        function copyToClipboardFallback(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopySuccess(button);
+            } catch (err) {
+                showNotification('❌ ОШИБКА', 'Не удалось скопировать код. Попробуйте выделить и скопировать вручную.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // Анимация появления элементов при прокрутке
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                    
+                    if (Math.random() > 0.7) {
+                        entry.target.style.filter = 'hue-rotate(90deg)';
+                        setTimeout(() => {
+                            entry.target.style.filter = '';
+                        }, 100);
+                        
+                        createPixelGlitch();
+                    }
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.info-card, .project-card, .social-card, .pricing-card, .code-generation .info-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'opacity 0.8s ease, transform 0.8s ease, filter 0.3s ease';
+            observer.observe(card);
+        });
+        
+        // Случайные глюки на сайте
+        setInterval(() => {
+            if (Math.random() > 0.9) {
+                document.body.style.transform = 'translateX(' + (Math.random() * 10 - 5) + 'px)';
+                document.body.style.filter = 'hue-rotate(' + Math.random() * 180 + 'deg)';
+                
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => createPixelGlitch(true), i * 50);
+                }
+                
+                setTimeout(() => {
+                    document.body.style.transform = '';
+                    document.body.style.filter = '';
+                }, 100);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
